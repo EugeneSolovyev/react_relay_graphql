@@ -1,0 +1,83 @@
+# Favorite places from Google API
+type Favorite implements Node {
+  # The ID of an object
+  id: ID!
+
+  # Name of favorite place
+  place: String
+
+  # Is favorite place?
+  isFavorite: Boolean
+}
+
+# A connection to a list of items.
+type FavoriteConnection {
+  # Information to aid in pagination.
+  pageInfo: PageInfo!
+
+  # A list of edges.
+  edges: [FavoriteEdge]
+}
+
+# An edge in a connection.
+type FavoriteEdge {
+  # The item at the end of the edge
+  node: Favorite
+
+  # A cursor for use in pagination
+  cursor: String!
+}
+
+# Google API
+type Google implements Node {
+  # The ID of an object
+  id: ID!
+
+  # Favorite place that I have
+  favorite(after: String, first: Int, before: String, last: Int): FavoriteConnection
+}
+
+type Mutation {
+  removeFavoriteItem(input: RemoveFavoriteInput!): RemoveFavoritePayload
+}
+
+# An object with an ID
+interface Node {
+  # The id of the object.
+  id: ID!
+}
+
+# Information about pagination in a connection.
+type PageInfo {
+  # When paginating forwards, are there more items?
+  hasNextPage: Boolean!
+
+  # When paginating backwards, are there more items?
+  hasPreviousPage: Boolean!
+
+  # When paginating backwards, the cursor to continue.
+  startCursor: String
+
+  # When paginating forwards, the cursor to continue.
+  endCursor: String
+}
+
+type Query {
+  # Fetches an object given its ID
+  node(
+    # The ID of an object
+    id: ID!
+  ): Node
+  google: Google
+}
+
+input RemoveFavoriteInput {
+  place: String!
+  clientMutationId: String
+}
+
+type RemoveFavoritePayload {
+  favoriteEdge: FavoriteEdge
+  google: Google
+  clientMutationId: String
+}
