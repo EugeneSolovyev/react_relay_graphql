@@ -41,12 +41,6 @@ function fetchFavorite(id) {
 });
 }
 
-function fetchRemoveable(name) {
-  return new Promise((resolve) => {
-    resolve(removeFavorite(name));
-});
-}
-
 function getFavorite(id) {
   return favorite.find(fav => fav.id === id);
 }
@@ -75,15 +69,11 @@ const favoriteLoader = new DataLoader(
   id => Promise.all(id.map(fetchFavorite))
 );
 
-const removeLoader = new DataLoader(
-  name => Promise.all(name.map(fetchRemoveable))
-);
-
 export {
   favoriteLoader,
   googleLoader,
   GooglePlaces,
   FavoritePlace,
   getFavorites,
-  removeLoader,
+  removeFavorite,
 };

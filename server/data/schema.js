@@ -29,7 +29,7 @@ import {
   GooglePlaces,
   FavoritePlace,
   getFavorites,
-  removeLoader,
+  removeFavorite,
 } from './database';
 
 
@@ -39,24 +39,24 @@ import {
  * The first method defines the way we resolve an ID to its object.
  * The second defines the way we resolve an object to its GraphQL type.
  */
-const { nodeInterface, nodeField } = nodeDefinitions(
+const {nodeInterface, nodeField} = nodeDefinitions(
   (globalId) => {
-  const { type, id } = fromGlobalId(globalId);
-if (type === 'Google') {
-  return googleLoader.load(id);
-} else if (type === 'Favorite') {
-  return favoriteLoader.load(id);
-}
-return null;
-},
-(obj) => {
-  if (obj instanceof GooglePlaces) {
-    return googleType;
-  } else if (obj instanceof FavoritePlace) {
-    return favoriteType;
+    const {type, id} = fromGlobalId(globalId);
+    if (type === 'Google') {
+      return googleLoader.load(id);
+    } else if (type === 'Favorite') {
+      return favoriteLoader.load(id);
+    }
+    return null;
+  },
+  (obj) => {
+    if (obj instanceof GooglePlaces) {
+      return googleType;
+    } else if (obj instanceof FavoritePlace) {
+      return favoriteType;
+    }
+    return null;
   }
-  return null;
-}
 );
 
 /**
@@ -67,31 +67,31 @@ const googleType = new GraphQLObjectType({
   name: 'Google',
   description: 'Google API',
   fields: () => ({
-  id: globalIdField('Google'),
-  favorite: {
-    type: favoriteConnection,
-    description: 'Favorite place that I have',
-    args: connectionArgs,
-    resolve: (source, args) => connectionFromPromisedArray(favoriteLoader.loadMany(source.favorite), args)
-},
-}),
-interfaces: [nodeInterface]
+    id: globalIdField('Google'),
+    favorite: {
+      type: favoriteConnection,
+      description: 'Favorite place that I have',
+      args: connectionArgs,
+      resolve: (source, args) => connectionFromPromisedArray(favoriteLoader.loadMany(source.favorite), args)
+    },
+  }),
+  interfaces: [nodeInterface]
 });
 
 const favoriteType = new GraphQLObjectType({
   name: 'Favorite',
   description: 'Favorite places from Google API',
   fields: () => ({
-  id: globalIdField('Favorite'),
-  place: {
-    type: GraphQLString,
-    description: 'Name of favorite place'
-  },
-  isFavorite: {
-    type: GraphQLBoolean,
-    description: 'Is favorite place?',
-  }
-}),
+    id: globalIdField('Favorite'),
+    place: {
+      type: GraphQLString,
+      description: 'Name of favorite place'
+    },
+    isFavorite: {
+      type: GraphQLBoolean,
+      description: 'Is favorite place?',
+    }
+  }),
   interfaces: [nodeInterface]
 });
 
@@ -99,7 +99,10 @@ const favoriteType = new GraphQLObjectType({
  * Define your own connection types here
  */
 
-const { connectionType: favoriteConnection, edgeType: favoriteEdge } = connectionDefinitions({ name: 'Favorite', nodeType: favoriteType});
+const {connectionType: favoriteConnection, edgeType: favoriteEdge} = connectionDefinitions({
+  name: 'Favorite',
+  nodeType: favoriteType
+});
 
 /**
  * Create feature example
@@ -108,48 +111,48 @@ const { connectionType: favoriteConnection, edgeType: favoriteEdge } = connectio
 const removeFavoriteMutation = mutationWithClientMutationId({
   name: 'RemoveFavorite',
   inputFields: {
-    place: { type: new GraphQLNonNull(GraphQLString) },
+    place: {type: new GraphQLNonNull(GraphQLString)},
   },
 
   outputFields: {
     favoriteEdge: {
       type: favoriteEdge,
       resolve: (obj) => {
-      const cursorId = cursorForObjectInConnection(getFavorites(), obj);
-return { node: obj, cursor: cursorId };
-}
-},
-google: {
-  type: googleType,
-    resolve: () => googleLoader.load('1')
-}
-},
+        const cursorId = cursorForObjectInConnection(getFavorites(), obj);
+        return {node: obj, cursor: cursorId};
+      }
+    },
+    google: {
+      type: googleType,
+      resolve: () => googleLoader.load('1')
+    }
+  },
 
-mutateAndGetPayload: ({ place }, args) => connectionFromPromisedArray(removeLoader.load(place), args),
+  mutateAndGetPayload: ({place}) => removeFavorite(place),
 });
 
 const addFavoriteMutation = mutationWithClientMutationId({
   name: 'AddFavorite',
   inputFields: {
-    place: { type: new GraphQLNonNull(GraphQLString) },
-    isFavorite: { type: new GraphQLNonNull(GraphQLBoolean) }
+    place: {type: new GraphQLNonNull(GraphQLString)},
+    isFavorite: {type: new GraphQLNonNull(GraphQLBoolean)}
   },
 
-  mutateAndGetPayload: ({ place, isFavorite }) => addFavorite(place, isFavorite),
+  mutateAndGetPayload: ({place, isFavorite}) => addFavorite(place, isFavorite),
 
   outputFields: {
-  favoriteEdge: {
-    type: favoriteEdge,
+    favoriteEdge: {
+      type: favoriteEdge,
       resolve: (obj) => {
-      const cursorId = cursorForObjectInConnection(getFavorites(), obj);
-      return { node: obj, cursor: cursorId };
-    }
-  },
-  google: {
-    type: googleType,
+        const cursorId = cursorForObjectInConnection(getFavorites(), obj);
+        return {node: obj, cursor: cursorId};
+      }
+    },
+    google: {
+      type: googleType,
       resolve: () => googleLoader.load('1')
+    }
   }
-}
 });
 
 
@@ -160,13 +163,13 @@ const addFavoriteMutation = mutationWithClientMutationId({
 const queryType = new GraphQLObjectType({
   name: 'Query',
   fields: () => ({
-  node: nodeField,
-  // Add your own root fields here
-  google: {
-    type: googleType,
-    resolve: () => googleLoader.load('1')
-}
-})
+    node: nodeField,
+    // Add your own root fields here
+    google: {
+      type: googleType,
+      resolve: () => googleLoader.load('1')
+    }
+  })
 });
 
 /**
@@ -176,9 +179,9 @@ const queryType = new GraphQLObjectType({
 const mutationType = new GraphQLObjectType({
   name: 'Mutation',
   fields: () => ({
-  // addFavorite: addFavoriteMutation,
-  removeFavoriteItem: removeFavoriteMutation,
-})
+    // addFavorite: addFavoriteMutation,
+    removeFavoriteItem: removeFavoriteMutation,
+  })
 });
 
 /**
